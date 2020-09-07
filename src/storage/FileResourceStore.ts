@@ -2,6 +2,7 @@ import { createReadStream, createWriteStream, promises as fsPromises, Stats } fr
 import { posix } from 'path';
 import { Readable } from 'stream';
 import { contentType as getContentTypeFromExtension } from 'mime-types';
+import { DataFactory } from 'n3';
 import type { Quad } from 'rdf-js';
 import streamifyArray from 'streamify-array';
 import { RuntimeConfig } from '../init/RuntimeConfig';
@@ -15,6 +16,7 @@ import { NotFoundHttpError } from '../util/errors/NotFoundHttpError';
 import { UnsupportedMediaTypeHttpError } from '../util/errors/UnsupportedMediaTypeHttpError';
 import { InteractionController } from '../util/InteractionController';
 import { MetadataController } from '../util/MetadataController';
+import { BYTE_SIZE, CONTENT_TYPE, LAST_CHANGED, SLUG, TYPE } from '../util/MetadataTypes';
 import { ensureTrailingSlash, trimTrailingSlashes } from '../util/Util';
 import { ResourceStore } from './ResourceStore';
 
@@ -64,16 +66,20 @@ export class FileResourceStore implements ResourceStore {
 
     // Get the path from the request URI, all metadata triples if any, and the Slug and Link header values.
     const path = this.parseIdentifier(container);
-    const { slug, raw } = representation.metadata;
-    const linkTypes = representation.metadata.linkRel?.type;
+    const slug = representation.metadata.get(SLUG)?.value;
+    const type = representation.metadata.get(TYPE)?.value;
+
+    // Create a new container or resource in the parent container with a specific name based on the incoming headers.
+    const isContainer = this.interactionController.isContainer(slug, type);
+    const newIdentifier = this.interactionController.generateIdentifier(isContainer, slug);
+
     let metadata;
+    // eslint-disable-next-line no-param-reassign
+    representation.metadata.identifier = DataFactory.namedNode(newIdentifier);
+    const raw = representation.metadata.quads();
     if (raw.length > 0) {
       metadata = this.metadataController.serializeQuads(raw);
     }
-
-    // Create a new container or resource in the parent container with a specific name based on the incoming headers.
-    const isContainer = this.interactionController.isContainer(slug, linkTypes);
-    const newIdentifier = this.interactionController.generateIdentifier(isContainer, slug);
     return isContainer ?
       this.createContainer(path, newIdentifier, path.endsWith('/'), metadata) :
       this.createFile(path, newIdentifier, representation.data, path.endsWith('/'), metadata);
@@ -158,15 +164,17 @@ export class FileResourceStore implements ResourceStore {
     if ((typeof path !== 'string' || normalizePath(path) === '/') && typeof slug !== 'string') {
       throw new ConflictHttpError('Container with that identifier already exists (root).');
     }
-    const { raw } = representation.metadata;
-    const linkTypes = representation.metadata.linkRel?.type;
+    // eslint-disable-next-line no-param-reassign
+    representation.metadata.identifier = DataFactory.namedNode(identifier.path);
+    const raw = representation.metadata.quads();
+    const type = representation.metadata.get(TYPE)?.value;
     let metadata: Readable | undefined;
     if (raw.length > 0) {
       metadata = streamifyArray(raw);
     }
 
     // Create a new container or resource in the parent container with a specific name based on the incoming headers.
-    const isContainer = this.interactionController.isContainer(slug, linkTypes);
+    const isContainer = this.interactionController.isContainer(slug, type);
     const newIdentifier = this.interactionController.generateIdentifier(isContainer, slug);
     return isContainer ?
       await this.setDirectoryRepresentation(path, newIdentifier, metadata) :
@@ -245,7 +253,8 @@ export class FileResourceStore implements ResourceStore {
    *
    * @returns The corresponding Representation.
    */
-  private async getFileRepresentation(path: string, stats: Stats): Promise<Representation> {
+  private async getFileRepresentation(path: string, stats: Stats):
+  Promise<Representation> {
     const readStream = createReadStream(path);
     const contentType = getContentTypeFromExtension(extname(path));
     let rawMetadata: Quad[] = [];
@@ -255,13 +264,11 @@ export class FileResourceStore implements ResourceStore {
     } catch (_) {
       // Metadata file doesn't exist so lets keep `rawMetaData` an empty array.
     }
-    const metadata: RepresentationMetadata = {
-      raw: rawMetadata,
-      dateTime: stats.mtime,
-      byteSize: stats.size,
-    };
+    const metadata = new RepresentationMetadata(this.mapFilepathToUrl(path), rawMetadata);
+    metadata.set(LAST_CHANGED, stats.mtime.toISOString());
+    metadata.set(BYTE_SIZE, DataFactory.literal(stats.size));
     if (contentType) {
-      metadata.contentType = contentType;
+      metadata.set(CONTENT_TYPE, contentType);
     }
     return { metadata, data: readStream, binary: true };
   }
@@ -293,14 +300,14 @@ export class FileResourceStore implements ResourceStore {
       // Metadata file doesn't exist so lets keep `rawMetaData` an empty array.
     }
 
+    const metadata = new RepresentationMetadata(containerURI, rawMetadata);
+    metadata.set(LAST_CHANGED, stats.mtime.toISOString());
+    metadata.set(CONTENT_TYPE, INTERNAL_QUADS);
+
     return {
       binary: false,
       data: streamifyArray(quads),
-      metadata: {
-        raw: rawMetadata,
-        dateTime: stats.mtime,
-        contentType: INTERNAL_QUADS,
-      },
+      metadata,
     };
   }
 

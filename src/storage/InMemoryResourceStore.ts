@@ -3,9 +3,11 @@ import arrayifyStream from 'arrayify-stream';
 import streamifyArray from 'streamify-array';
 import { RuntimeConfig } from '../init/RuntimeConfig';
 import { Representation } from '../ldp/representation/Representation';
+import { RepresentationMetadata } from '../ldp/representation/RepresentationMetadata';
 import { ResourceIdentifier } from '../ldp/representation/ResourceIdentifier';
 import { TEXT_TURTLE } from '../util/ContentTypes';
 import { NotFoundHttpError } from '../util/errors/NotFoundHttpError';
+import { CONTENT_TYPE } from '../util/MetadataTypes';
 import { ensureTrailingSlash } from '../util/Util';
 import { ResourceStore } from './ResourceStore';
 
@@ -25,12 +27,14 @@ export class InMemoryResourceStore implements ResourceStore {
   public constructor(runtimeConfig: RuntimeConfig) {
     this.runtimeConfig = runtimeConfig;
 
+    const metadata = new RepresentationMetadata();
+    metadata.add(CONTENT_TYPE, TEXT_TURTLE);
     this.store = {
       // Default root entry (what you get when the identifier is equal to the base)
       '': {
         binary: true,
         data: streamifyArray([]),
-        metadata: { raw: [], profiles: [], contentType: TEXT_TURTLE },
+        metadata,
       },
     };
   }

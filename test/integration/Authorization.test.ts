@@ -19,6 +19,7 @@ import { PutOperationHandler } from '../../src/ldp/operations/PutOperationHandle
 import { ResponseDescription } from '../../src/ldp/operations/ResponseDescription';
 import { MethodPermissionsExtractor } from '../../src/ldp/permissions/MethodPermissionsExtractor';
 import { PermissionSet } from '../../src/ldp/permissions/PermissionSet';
+import { RepresentationMetadata } from '../../src/ldp/representation/RepresentationMetadata';
 import { QuadToTurtleConverter } from '../../src/storage/conversion/QuadToTurtleConverter';
 import { TurtleToQuadConverter } from '../../src/storage/conversion/TurtleToQuadConverter';
 import { InMemoryResourceStore } from '../../src/storage/InMemoryResourceStore';
@@ -26,6 +27,7 @@ import { RepresentationConvertingStore } from '../../src/storage/RepresentationC
 import { ResourceStore } from '../../src/storage/ResourceStore';
 import { UrlContainerManager } from '../../src/storage/UrlContainerManager';
 import { CompositeAsyncHandler } from '../../src/util/CompositeAsyncHandler';
+import { CONTENT_TYPE } from '../../src/util/MetadataTypes';
 import { call } from '../util/Util';
 
 const setAcl = async(store: ResourceStore, id: string, permissions: PermissionSet, control: boolean,
@@ -59,17 +61,16 @@ const setAcl = async(store: ResourceStore, id: string, permissions: PermissionSe
 
   acl.push('.');
 
+  const aclId = { path: `${id}.acl` };
+  const metadata = new RepresentationMetadata(id);
+  metadata.set(CONTENT_TYPE, 'text/turtle');
   const representation = {
     binary: true,
     data: streamifyArray(acl),
-    metadata: {
-      raw: [],
-      profiles: [],
-      contentType: 'text/turtle',
-    },
+    metadata,
   };
 
-  return store.setRepresentation({ path: `${id}.acl` }, representation);
+  return store.setRepresentation(aclId, representation);
 };
 
 describe('A server with authorization', (): void => {
