@@ -27,7 +27,7 @@ import { RepresentationConvertingStore } from '../../src/storage/RepresentationC
 import { ResourceStore } from '../../src/storage/ResourceStore';
 import { UrlContainerManager } from '../../src/storage/UrlContainerManager';
 import { CompositeAsyncHandler } from '../../src/util/CompositeAsyncHandler';
-import { CONTENT_TYPE } from '../../src/util/MetadataTypes';
+import { MA_CONTENT_TYPE } from '../../src/util/MetadataTypes';
 import { call } from '../util/Util';
 
 const setAcl = async(store: ResourceStore, id: string, permissions: PermissionSet, control: boolean,
@@ -62,8 +62,7 @@ const setAcl = async(store: ResourceStore, id: string, permissions: PermissionSe
   acl.push('.');
 
   const aclId = { path: `${id}.acl` };
-  const metadata = new RepresentationMetadata(id);
-  metadata.set(CONTENT_TYPE, 'text/turtle');
+  const metadata = new RepresentationMetadata(id, { [MA_CONTENT_TYPE]: 'text/turtle' });
   const representation = {
     binary: true,
     data: streamifyArray(acl),
