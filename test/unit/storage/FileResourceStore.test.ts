@@ -5,7 +5,6 @@ import { literal, namedNode, quad as quadRDF, triple } from '@rdfjs/data-model';
 import arrayifyStream from 'arrayify-stream';
 import { DataFactory } from 'n3';
 import streamifyArray from 'streamify-array';
-import { RuntimeConfig } from '../../../src/init/RuntimeConfig';
 import { Representation } from '../../../src/ldp/representation/Representation';
 import { RepresentationMetadata } from '../../../src/ldp/representation/RepresentationMetadata';
 import { FileResourceStore } from '../../../src/storage/FileResourceStore';
@@ -50,7 +49,8 @@ describe('A FileResourceStore', (): void => {
     jest.clearAllMocks();
 
     store = new FileResourceStore(
-      new RuntimeConfig({ base, rootFilepath }),
+      base,
+      rootFilepath,
       new InteractionController(),
       new MetadataController(),
     );

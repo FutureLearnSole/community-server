@@ -4,7 +4,6 @@ import { Parser } from 'n3';
 import { MockResponse } from 'node-mocks-http';
 import { UnsecureWebIdExtractor } from '../../src/authentication/UnsecureWebIdExtractor';
 import { AllowEverythingAuthorizer } from '../../src/authorization/AllowEverythingAuthorizer';
-import { RuntimeConfig } from '../../src/init/RuntimeConfig';
 import { AuthenticatedLdpHandler } from '../../src/ldp/AuthenticatedLdpHandler';
 import { AcceptPreferenceParser } from '../../src/ldp/http/AcceptPreferenceParser';
 import { BasicRequestParser } from '../../src/ldp/http/BasicRequestParser';
@@ -45,7 +44,7 @@ describe('An integrated AuthenticatedLdpHandler', (): void => {
     const permissionsExtractor = new MethodPermissionsExtractor();
     const authorizer = new AllowEverythingAuthorizer();
 
-    const store = new InMemoryResourceStore(new RuntimeConfig({ base: 'http://test.com/' }));
+    const store = new InMemoryResourceStore('http://test.com/');
     const operationHandler = new CompositeAsyncHandler<Operation, ResponseDescription>([
       new GetOperationHandler(store),
       new PostOperationHandler(store),
@@ -116,7 +115,7 @@ describe('An integrated AuthenticatedLdpHandler', (): void => {
     ]);
     const authorizer = new AllowEverythingAuthorizer();
 
-    const store = new InMemoryResourceStore(new RuntimeConfig({ base: 'http://test.com/' }));
+    const store = new InMemoryResourceStore('http://test.com/');
     const converter = new CompositeAsyncHandler([
       new QuadToTurtleConverter(),
       new TurtleToQuadConverter(),

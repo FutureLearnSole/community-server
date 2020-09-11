@@ -76,7 +76,7 @@
     "@types/yargs": "^15.0.5",
     "arrayify-stream": "^1.0.0",
     "async-lock": "^1.2.4",
-    "componentsjs": "^3.4.2",
+    "componentsjs": "^3.5.0",
     "cors": "^2.8.5",
     "express": "^4.17.1",
     "mime-types": "^2.1.27",

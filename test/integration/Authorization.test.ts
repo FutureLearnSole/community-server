@@ -3,7 +3,6 @@ import streamifyArray from 'streamify-array';
 import { UnsecureWebIdExtractor } from '../../src/authentication/UnsecureWebIdExtractor';
 import { UrlBasedAclManager } from '../../src/authorization/UrlBasedAclManager';
 import { WebAclAuthorizer } from '../../src/authorization/WebAclAuthorizer';
-import { RuntimeConfig } from '../../src/init/RuntimeConfig';
 import { AuthenticatedLdpHandler } from '../../src/ldp/AuthenticatedLdpHandler';
 import { AcceptPreferenceParser } from '../../src/ldp/http/AcceptPreferenceParser';
 import { BasicRequestParser } from '../../src/ldp/http/BasicRequestParser';
@@ -80,7 +79,7 @@ describe('A server with authorization', (): void => {
     bodyParser,
   });
 
-  const store = new InMemoryResourceStore(new RuntimeConfig({ base: 'http://test.com/' }));
+  const store = new InMemoryResourceStore('http://test.com/');
   const converter = new CompositeAsyncHandler([
     new QuadToTurtleConverter(),
     new TurtleToQuadConverter(),
@@ -91,7 +90,7 @@ describe('A server with authorization', (): void => {
   const permissionsExtractor = new MethodPermissionsExtractor();
   const authorizer = new WebAclAuthorizer(
     new UrlBasedAclManager(),
-    new UrlContainerManager(new RuntimeConfig({ base: 'http://test.com/' })),
+    new UrlContainerManager('http://test.com/'),
     convertingStore,
   );
 

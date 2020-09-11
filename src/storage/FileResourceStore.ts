@@ -4,7 +4,6 @@ import { Readable } from 'stream';
 import { contentType as getContentTypeFromExtension } from 'mime-types';
 import type { Quad } from 'rdf-js';
 import streamifyArray from 'streamify-array';
-import { RuntimeConfig } from '../init/RuntimeConfig';
 import { Representation } from '../ldp/representation/Representation';
 import { RepresentationMetadata } from '../ldp/representation/RepresentationMetadata';
 import { ResourceIdentifier } from '../ldp/representation/ResourceIdentifier';
@@ -25,28 +24,31 @@ const { extname, join: joinPath, normalize: normalizePath } = posix;
  * All requests will throw an {@link NotFoundHttpError} if unknown identifiers get passed.
  */
 export class FileResourceStore implements ResourceStore {
-  private readonly runtimeConfig: RuntimeConfig;
+  private readonly base: string;
+  private readonly prootFilepath: string;
   private readonly interactionController: InteractionController;
   private readonly metadataController: MetadataController;
 
   /**
-   * @param runtimeConfig - The runtime config.
+   * @param base - The base URL.
+   * @param rootFilepath - The root file path.
    * @param interactionController - Instance of InteractionController to use.
    * @param metadataController - Instance of MetadataController to use.
    */
-  public constructor(runtimeConfig: RuntimeConfig, interactionController: InteractionController,
+  public constructor(base: string, rootFilepath: string, interactionController: InteractionController,
     metadataController: MetadataController) {
-    this.runtimeConfig = runtimeConfig;
+    this.base = base;
+    this.prootFilepath = rootFilepath;
     this.interactionController = interactionController;
     this.metadataController = metadataController;
   }
 
   public get baseRequestURI(): string {
-    return trimTrailingSlashes(this.runtimeConfig.base);
+    return trimTrailingSlashes(this.base);
   }
 
   public get rootFilepath(): string {
-    return trimTrailingSlashes(this.runtimeConfig.rootFilepath);
+    return trimTrailingSlashes(this.prootFilepath);
   }
 
   /**
